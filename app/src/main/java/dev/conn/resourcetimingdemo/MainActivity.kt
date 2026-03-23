@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -19,6 +20,9 @@ class MainActivity : AppCompatActivity() {
     private var cacheBytes = 0L
     private var networkBytes = 0L
     private var undeterminedBytes = 0L
+    private var cacheNum = 0
+    private var networkNum = 0
+    private var undeterminedNum = 0
 
     private lateinit var cacheCounter: TextView
     private lateinit var networkCounter: TextView
@@ -42,6 +46,10 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        onBackPressedDispatcher.addCallback {
+            if (webview.canGoBack()) webview.goBack()
+        }
+
         // Enable JavaScript so the ResourceTiming API can run.
         webview.settings.javaScriptEnabled = true
 
@@ -56,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         val allowedOriginRules = setOf("*")
 
         // addWebMessageListener allows JavaScript to send messages back to our Java/Kotlin code.
-        // This is safer and more performant than addJavascriptInterface.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             WebViewCompat.addWebMessageListener(
                 webview,
@@ -71,9 +78,18 @@ class MainActivity : AppCompatActivity() {
                         val sizeBytes = json.getLong("size")
 
                         when (type) {
-                            "cache" -> cacheBytes += sizeBytes
-                            "network" -> networkBytes += sizeBytes
-                            "undetermined" -> undeterminedBytes += sizeBytes
+                            "cache" -> {
+                                cacheBytes += sizeBytes
+                                cacheNum++
+                            }
+                            "network" -> {
+                                networkBytes += sizeBytes
+                                networkNum++
+                            }
+                            "undetermined" -> {
+                                undeterminedBytes += sizeBytes
+                                undeterminedNum++
+                            }
                         }
                         updateCounters()
                     }
@@ -90,20 +106,18 @@ class MainActivity : AppCompatActivity() {
                 const observer = new PerformanceObserver((list) => {
                     for (const entry of list.getEntries()) {
                         let type;
-                        // According to the PerformanceResourceTiming API:
-                        // If cross-origin without Timing-Allow-Origin header, sizes are 0.
-                        // We mark these as 'undetermined'.
-                        // If the resource is fetched from local cache, transferSize is 0.
-                        // Otherwise, it was fetched from the network.
                         if (entry.decodedBodySize === 0) {
+                            // This means we couldn't get information about the resource as it was
+                            // cross origin.
                             type = 'undetermined';
                         } else if (entry.transferSize === 0) {
+                            // If 0 bytes were transferred through the network, this means the 
+                            // resource was served from the local cache.
                             type = 'cache';
                         } else {
                             type = 'network';
                         }
                         
-                        // Send the categorized size back to the native Android code.
                         AndroidListener.postMessage(JSON.stringify({ 
                             type: type, 
                             size: entry.decodedBodySize || 0 
@@ -119,21 +133,24 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Load testing page
-        webview.loadUrl("https://peconn.github.io/resource_timing.html")
+        webview.loadUrl("https://www.wikipedia.org")
     }
 
     private fun resetCounters() {
         cacheBytes = 0L
         networkBytes = 0L
         undeterminedBytes = 0L
+        cacheNum = 0
+        networkNum = 0
+        undeterminedNum = 0
         updateCounters()
     }
 
     private fun updateCounters() {
         runOnUiThread {
-            cacheCounter.text = "Cache: ${cacheBytes / 1024} KB"
-            networkCounter.text = "Network: ${networkBytes / 1024} KB"
-            undeterminedCounter.text = "Undetermined: ${undeterminedBytes / 1024} KB"
+            cacheCounter.text = "Cache: $cacheNum (${cacheBytes / 1024} KB)"
+            networkCounter.text = "Network: $networkNum (${networkBytes / 1024} KB)"
+            undeterminedCounter.text = "Undetermined: ${undeterminedNum}"
         }
     }
 }
