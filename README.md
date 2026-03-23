@@ -22,3 +22,7 @@ We use `WebViewCompat#addDocumentStartJavaScript` to inject some JavaScript that
 All the interesting code lives in [MainActivity.kt](./app/src/main/java/dev/conn/resourcetimingdemo/MainActivity.kt).
 
 ./resource-timing.mp4
+
+https://github.com/PEConn/resource-timing/raw/refs/heads/main/resource-timing.mp4
+
+![App demo](./resource-timing.mp4)
