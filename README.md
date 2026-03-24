@@ -4,6 +4,8 @@ This Android application demonstrates how to use the [Web Resource Timing API](h
 
 https://github.com/user-attachments/assets/d204b4ff-cfde-42ff-b22f-5419aece6727
 
+Information about individual resources is printed to the Android logs, you can view it with `adb logcat | grep ResourceTiming`.
+
 ## Resource Timing API
 
 This API provides detailed network timing data about the application's resources.

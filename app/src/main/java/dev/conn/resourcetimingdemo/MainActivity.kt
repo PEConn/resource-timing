@@ -3,6 +3,7 @@ package dev.conn.resourcetimingdemo
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.util.Log
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.TextView
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         webview.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                Log.d("ResourceTiming", "Loading $url.")
                 resetCounters()
             }
         }
@@ -76,7 +78,9 @@ class MainActivity : AppCompatActivity() {
                         val json = JSONObject(messageData)
                         val type = json.getString("type")
                         val sizeBytes = json.getLong("size")
+                        val url = json.getString("url")
 
+                        Log.d("ResourceTiming", "$url: $type")
                         when (type) {
                             "cache" -> {
                                 cacheBytes += sizeBytes
@@ -120,7 +124,8 @@ class MainActivity : AppCompatActivity() {
                         
                         AndroidListener.postMessage(JSON.stringify({ 
                             type: type, 
-                            size: entry.decodedBodySize || 0 
+                            size: entry.decodedBodySize || 0,
+                            url: entry.name
                         }));
                     }
                 });
