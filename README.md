@@ -9,7 +9,11 @@ Information about individual resources is printed to the Android logs, you can v
 ## Resource Timing API
 
 This API provides detailed network timing data about the application's resources.
-We attach a [PerformanceObserver](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver) to track performance events and read the [transferSize](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming/transferSize) property to determine whether the resource was fetched from the network.
+We attach a [PerformanceObserver](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver) to track performance events and read the [deliveryType](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming/deliveryType) and [transferSize](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming/transferSize) properties to determine whether the resource was fetched from the network, a valid cache, or a revalidated cache.
+
+- **Valid Cache Hit:** A resource that is loaded completely from the cache without needing to contact the server. This is identified when `deliveryType == "cache"` and `transferSize == 0`.
+- **Revalidated Cache Hit:** A resource that is loaded from the cache, but required contacting the server to verify it is still fresh (e.g., using `304 Not Modified`). This is identified when `deliveryType == "cache"` and `transferSize > 0`.
+- **Network:** Resources loaded from the network normally.
 
 ### Cross origin limitations
 

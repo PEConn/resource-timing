@@ -18,14 +18,17 @@ import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
-    private var cacheBytes = 0L
+    private var cacheValidBytes = 0L
+    private var cacheRevalidatedBytes = 0L
     private var networkBytes = 0L
     private var undeterminedBytes = 0L
-    private var cacheNum = 0
+    private var cacheValidNum = 0
+    private var cacheRevalidatedNum = 0
     private var networkNum = 0
     private var undeterminedNum = 0
 
-    private lateinit var cacheCounter: TextView
+    private lateinit var cacheValidCounter: TextView
+    private lateinit var cacheRevalidatedCounter: TextView
     private lateinit var networkCounter: TextView
     private lateinit var undeterminedCounter: TextView
     private lateinit var webview: WebView
@@ -36,7 +39,8 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        cacheCounter = findViewById(R.id.counter_cache)
+        cacheValidCounter = findViewById(R.id.counter_cache_valid)
+        cacheRevalidatedCounter = findViewById(R.id.counter_cache_revalidated)
         networkCounter = findViewById(R.id.counter_network)
         undeterminedCounter = findViewById(R.id.counter_undetermined)
         webview = findViewById(R.id.webview)
@@ -82,9 +86,13 @@ class MainActivity : AppCompatActivity() {
 
                         Log.d("ResourceTiming", "$url: $type")
                         when (type) {
-                            "cache" -> {
-                                cacheBytes += sizeBytes
-                                cacheNum++
+                            "cache_valid" -> {
+                                cacheValidBytes += sizeBytes
+                                cacheValidNum++
+                            }
+                            "cache_revalidated" -> {
+                                cacheRevalidatedBytes += sizeBytes
+                                cacheRevalidatedNum++
                             }
                             "network" -> {
                                 networkBytes += sizeBytes
@@ -114,10 +122,12 @@ class MainActivity : AppCompatActivity() {
                             // This means we couldn't get information about the resource as it was
                             // cross origin.
                             type = 'undetermined';
-                        } else if (entry.transferSize === 0) {
-                            // If 0 bytes were transferred through the network, this means the 
-                            // resource was served from the local cache.
-                            type = 'cache';
+                        } else if (entry.deliveryType === 'cache' && entry.transferSize === 0) {
+                            // 0 bytes were transferred and deliveryType is cache means it was a valid cache hit.
+                            type = 'cache_valid';
+                        } else if (entry.deliveryType === 'cache' && entry.transferSize > 0) {
+                            // > 0 bytes transferred and deliveryType is cache means it was a revalidated cache hit.
+                            type = 'cache_revalidated';
                         } else {
                             type = 'network';
                         }
@@ -142,10 +152,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resetCounters() {
-        cacheBytes = 0L
+        cacheValidBytes = 0L
+        cacheRevalidatedBytes = 0L
         networkBytes = 0L
         undeterminedBytes = 0L
-        cacheNum = 0
+        cacheValidNum = 0
+        cacheRevalidatedNum = 0
         networkNum = 0
         undeterminedNum = 0
         updateCounters()
@@ -153,7 +165,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateCounters() {
         runOnUiThread {
-            cacheCounter.text = "Cache: $cacheNum (${cacheBytes / 1024} KB)"
+            cacheValidCounter.text = "Valid Cache: $cacheValidNum (${cacheValidBytes / 1024} KB)"
+            cacheRevalidatedCounter.text = "Revalidated Cache: $cacheRevalidatedNum (${cacheRevalidatedBytes / 1024} KB)"
             networkCounter.text = "Network: $networkNum (${networkBytes / 1024} KB)"
             undeterminedCounter.text = "Undetermined: ${undeterminedNum}"
         }
