@@ -141,7 +141,7 @@ class MainActivity : AppCompatActivity() {
                 });
                 // Watch for 'resource' entries and use buffered:true to catch those loaded before
                 // the observer was fully registered.
-                observer.observe({ type: 'resource', buffered: true });
+                observer.observe({ eventTypes: ["resource", "navigation"], buffered: true });
             """.trimIndent()
 
             WebViewCompat.addDocumentStartJavaScript(webview, jsObserver, allowedOriginRules)
